@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y curl unzip && rm -rf /var/lib/apt/lists
 COPY . .
 
 # URL ZIP default (bisa diganti lewat env di Railway/VPS)
-ENV ZIP_URL="https://raw.githubusercontent.com/yudzxml-tmp/bot/refs/heads/main/app.zip"
+ENV ZIP_URL="https://cdn.yupra.my.id/yp/cow9c4mh.zip"
 
 # Download dan ekstrak ZIP, lalu pindahkan semua isi ke /app
 RUN set -e; \
