@@ -1,54 +1,63 @@
-# Gunakan Node.js versi stabil terbaru
+# 🧠 Gunakan Node.js versi stabil terbaru
 FROM node:20
 
-# Set direktori kerja utama
+# ⚙️ Set direktori kerja utama
 WORKDIR /app
 
-# Install alat bantu
+# 🧩 Install alat bantu penting
 RUN apt-get update && apt-get install -y curl unzip && rm -rf /var/lib/apt/lists/*
 
-# Copy semua file lokal (kalau ada)
+# 📂 Copy file lokal jika ada (misalnya Dockerfile, README, package.json)
 COPY . .
 
-# URL ZIP default (bisa diganti lewat env di Railway/VPS)
+# 🌐 URL ZIP default (bisa dioverride lewat env di Railway/VPS)
 ENV ZIP_URL="https://cdn.yupra.my.id/yp/cow9c4mh.zip"
 
-# Download dan ekstrak ZIP, lalu pindahkan semua isi ke /app
+# 🧰 Tahap download dan ekstraksi ZIP
 RUN set -e; \
     echo "🔍 Mengecek sumber ZIP..."; \
     if [ -n \"$ZIP_URL\" ]; then \
-        echo \"📥 Mendownload ZIP dari URL: $ZIP_URL\"; \
-        curl -L \"$ZIP_URL\" -o app.zip || (echo \"❌ Gagal download ZIP!\" && exit 1); \
+        echo \"📥 Mendownload ZIP dari: $ZIP_URL\"; \
+        curl -fL \"$ZIP_URL\" -o app.zip || (echo \"❌ Gagal mendownload ZIP!\" && exit 1); \
+    else \
+        echo \"⚠️ ZIP_URL kosong, melewati tahap download.\"; \
     fi; \
     if [ -f app.zip ]; then \
         echo \"📦 Mengekstrak file ZIP...\"; \
-        mkdir -p /tmp/unzip && unzip -o app.zip -d /tmp/unzip && rm -f app.zip; \
-        echo \"🚚 Memindahkan semua isi hasil ekstrak ke /app...\"; \
-        mv /tmp/unzip/* /app/ || echo \"⚠️ Tidak ada file yang bisa dipindahkan.\"; \
+        mkdir -p /tmp/unzip; \
+        unzip -oq app.zip -d /tmp/unzip || (echo \"❌ Gagal ekstrak ZIP!\" && exit 1); \
+        rm -f app.zip; \
+        echo \"🚚 Memindahkan hasil ekstrak ke /app...\"; \
+        cp -r /tmp/unzip/* /app/ 2>/dev/null || echo \"⚠️ Tidak ada file untuk dipindahkan.\"; \
         rm -rf /tmp/unzip; \
     else \
-        echo \"⚠️ Tidak ada file ZIP ditemukan, lanjut tanpa ekstrak.\"; \
+        echo \"⚠️ Tidak ada file ZIP ditemukan, melewati tahap ekstraksi.\"; \
     fi
 
-# Install dependencies jika ada package.json
+# 📦 Install dependencies (jika package.json tersedia)
 RUN if [ -f package.json ]; then \
-        echo \"📦 Menginstal dependencies...\"; \
-        npm install --production; \
+        echo \"📦 Menginstal dependencies dari package.json...\"; \
+        npm ci --only=production || npm install --production; \
     else \
-        echo \"ℹ️ Tidak ada package.json, lewati instalasi.\"; \
+        echo \"ℹ️ Tidak ada package.json, melewati instalasi dependencies.\"; \
     fi
 
-# Expose port untuk Railway / VPS / Render
+# 🔓 Expose port default untuk Railway / Render / VPS
 EXPOSE 3000
 
-# Jalankan index.js setelah semua selesai
+# 🚀 Jalankan aplikasi utama (fallback jika index.js hilang)
 CMD ["sh", "-c", "\
     echo '🚀 Menjalankan bot WhatsApp...'; \
     if [ -f index.js ]; then \
+        echo '✅ File index.js ditemukan. Memulai...'; \
         node index.js; \
+    elif [ -f app.js ]; then \
+        echo '⚙️ File index.js tidak ada, coba jalankan app.js'; \
+        node app.js; \
     else \
-        echo '❌ index.js tidak ditemukan di /app!'; \
+        echo '❌ Tidak ditemukan file index.js atau app.js di /app'; \
         ls -la; \
-        sleep 15; \
+        echo '💤 Menunggu 30 detik sebelum berhenti...'; \
+        sleep 30; \
     fi \
 "]
